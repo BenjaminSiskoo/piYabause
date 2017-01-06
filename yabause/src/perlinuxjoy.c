@@ -249,18 +249,8 @@ static int LinuxJoyInit(perlinuxjoy_struct * joystick, const char * path, int id
    struct js_event evt;
    ssize_t num_read;
    joystick->fd = open(path, O_RDONLY | O_NONBLOCK);
-   if (joystick->fd == -1) return -1;
-   if (ioctl(joystick->fd, JSIOCGNAME(sizeof(name)), name) < 0)
-      strncpy(name, "Unknown", sizeof(name));
-   printf("Joyinit open %s ", name);
-   if ((joystick->mapping = getSupportedJoy(name)) == -1) {
-      printf("is not supported\n");
-      return -1;
-   } else {
-      printf("is supported => Player %d\n", id+1);
-   }
+   if (joystick->fd == -1) return;
    joystick->axiscount = 0;
-   joystick->id = id;
    while ((num_read = read(joystick->fd, &evt, sizeof(struct js_event))) > 0)
    {      if (evt.type == (JS_EVENT_AXIS | JS_EVENT_INIT))
       {

@@ -33,20 +33,18 @@ u32  PERLinuxJoyScan(u32 flags);
 void PERLinuxJoyFlush(void);
 void PERLinuxKeyName(u32 key, char * name, int size);
 
-#define SERVICE_BUTTON_NUMBER 3
+#define SERVICE_BUTTON_NUMBER 1
 #define SERVICE_BUTTON_EXIT (PERGUN_AXIS+1)
-#define SERVICE_BUTTON_TOGGLE (PERGUN_AXIS+2)
-#define SERVICE_TOGGLE_EXIT (PERGUN_AXIS+3)
 
 typedef struct {
    const char* name;
    int code[PERGUN_AXIS+1+SERVICE_BUTTON_NUMBER];
 } joymapping_struct;
 
-#define MAPPING_NB 3
+#define MAPPING_NB 1
 
 joymapping_struct joyMapping[MAPPING_NB] = {
-   {"SZMy-power LTD CO.  Dual Box WII", 
+   {"SZMy-power_LTD_CO._Dual_Box_WII", 
       {
          JS_EVENT_BUTTON<<8 | 12, //PERPAD_UP
          JS_EVENT_BUTTON<<8 | 13, //PERPAD_RIGHT
@@ -78,89 +76,11 @@ joymapping_struct joyMapping[MAPPING_NB] = {
          -1,                      //PERGUN_START
          -1,                      //PERGUN_AXIS
          JS_EVENT_BUTTON<<8 | 10, //SERVICE_BUTTON_EXIT
-         -1,                      //SERVICE_BUTTON_TOGGLE
-         -1,                      //SERVICE_TOGGLE_EXIT
-      }
-   },
-   {"Sony PLAYSTATION(R)3 Controller", 
-      {
-         JS_EVENT_BUTTON<<8 | 4, //PERPAD_UP
-         JS_EVENT_BUTTON<<8 | 5, //PERPAD_RIGHT
-         JS_EVENT_BUTTON<<8 | 6, //PERPAD_DOWN
-         JS_EVENT_BUTTON<<8 | 7, //PERPAD_LEFT
-         JS_EVENT_BUTTON<<8 | 9,  //PERPAD_RIGHT_TRIGGER
-         JS_EVENT_BUTTON<<8 | 8,  //PERPAD_LEFT_TRIGGER
-         JS_EVENT_BUTTON<<8 | 3,  //PERPAD_START
-         JS_EVENT_BUTTON<<8 | 14, //PERPAD_A
-         JS_EVENT_BUTTON<<8 | 13, //PERPAD_B
-         JS_EVENT_BUTTON<<8 | 11, //PERPAD_C
-         JS_EVENT_BUTTON<<8 | 15, //PERPAD_X
-         JS_EVENT_BUTTON<<8 | 12, //PERPAD_Y
-         JS_EVENT_BUTTON<<8 | 10, //PERPAD_Z
-         -1,                      //PERMOUSE_LEFT
-         -1,                      //PERMOUSE_MIDDLE
-         -1,                      //PERMOUSE_RIGHT
-         -1,                      //PERMOUSE_START
-         -1,                      //PERMOUSE_AXIS
-         -1,                      //PERANALOG_AXIS1
-         -1,                      //PERANALOG_AXIS2
-         -1,                      //PERANALOG_AXIS3
-         -1,                      //PERANALOG_AXIS4
-         -1,                      //PERANALOG_AXIS5
-         -1,                      //PERANALOG_AXIS6
-         -1,                      //PERANALOG_AXIS7
-         -1,                      //PERGUN_TRIGGER
-         -1,
-         -1,                      //PERGUN_START
-         -1,                      //PERGUN_AXIS
-         JS_EVENT_BUTTON<<8 | 16, //SERVICE_BUTTON_EXIT
-         -1,                      //SERVICE_BUTTON_TOGGLE
-         -1,                      //SERVICE_TOGGLE_EXIT
-      }
-   },
-   {"HuiJia  USB GamePad", 
-      {
-         JS_EVENT_BUTTON<<8 | 12, //PERPAD_UP
-         JS_EVENT_BUTTON<<8 | 13, //PERPAD_RIGHT
-         JS_EVENT_BUTTON<<8 | 14, //PERPAD_DOWN
-         JS_EVENT_BUTTON<<8 | 15, //PERPAD_LEFT
-         JS_EVENT_BUTTON<<8 | 7,  //PERPAD_RIGHT_TRIGGER
-         JS_EVENT_BUTTON<<8 | 5,  //PERPAD_LEFT_TRIGGER
-         JS_EVENT_BUTTON<<8 | 9,  //PERPAD_START
-         JS_EVENT_BUTTON<<8 | 0,  //PERPAD_A
-         JS_EVENT_BUTTON<<8 | 1,  //PERPAD_B
-         JS_EVENT_BUTTON<<8 | 2,  //PERPAD_C
-         JS_EVENT_BUTTON<<8 | 3,  //PERPAD_X
-         JS_EVENT_BUTTON<<8 | 4,  //PERPAD_Y
-         JS_EVENT_BUTTON<<8 | 6,  //PERPAD_Z
-         -1,                      //PERMOUSE_LEFT
-         -1,                      //PERMOUSE_MIDDLE
-         -1,                      //PERMOUSE_RIGHT
-         -1,                      //PERMOUSE_START
-         -1,                      //PERMOUSE_AXIS
-         -1,                      //PERANALOG_AXIS1
-         -1,                      //PERANALOG_AXIS2
-         -1,                      //PERANALOG_AXIS3
-         -1,                      //PERANALOG_AXIS4
-         -1,                      //PERANALOG_AXIS5
-         -1,                      //PERANALOG_AXIS6
-         -1,                      //PERANALOG_AXIS7
-         -1,                      //PERGUN_TRIGGER
-         -1,
-         -1,                      //PERGUN_START
-         -1,                      //PERGUN_AXIS
-         -1,                      //SERVICE_BUTTON_EXIT
-         JS_EVENT_BUTTON<<8 | 9,  //SERVICE_BUTTON_TOGGLE
-         JS_EVENT_BUTTON<<8 | 0,  //SERVICE_TOGGLE_EXIT
       }
    },
 };
 
 int requestExit = 0;
-int toggle = 0;
-int service = 0;
-
-#define TOGGLE_EXIT 0
 
 PerInterface_struct PERLinuxJoy = {
 PERCORE_LINUXJOY,
@@ -186,46 +106,15 @@ typedef struct
 static perlinuxjoy_struct * joysticks = NULL;
 static int joycount = 0;
 
-#define PACKEVENT(evt,joy) ((joy->id << 17) | getPerPadKey(evt.value, (evt.value < 0 ? 0x10000 : 0) | (evt.type << 8) | (evt.number), joy))
+#define PACKEVENT(evt,joy) ((joy->id << 17) | getPerPadKey((evt.value < 0 ? 0x10000 : 0) | (evt.type << 8) | (evt.number), joy))
 #define THRESHOLD 1000
 #define MAXAXIS 256
 
 //////////////////////////////////////////////////////////////////////////////
 
-static int handleToggle(int state, int val, perlinuxjoy_struct * joystick) {
-   int i;
-   int ret = 0;
-   for (i=PERGUN_AXIS+2; i< PERGUN_AXIS+1+SERVICE_BUTTON_NUMBER; i++) {
-      if (joyMapping[joystick->mapping].code[i] == val) {
-         switch (i) {
-            case SERVICE_BUTTON_TOGGLE:
-               if (state != 0)
-                  toggle = 1;
-               else
-                  toggle = 0;
-            break;
-            case SERVICE_TOGGLE_EXIT:
-               if (state != 0)
-                  service  |= (1 << TOGGLE_EXIT);
-               else
-                  service &= ~(1 << TOGGLE_EXIT);
-            break;
-            default:
-            break;
-         }
-      }
-   }
-   if (toggle) {
-      requestExit = service & (1<< TOGGLE_EXIT);
-      if (requestExit) ret=1;
-   }
-   return ret;
-}
-
-static int getPerPadKey(int state, int val, perlinuxjoy_struct * joystick) {
+static int getPerPadKey(int val, perlinuxjoy_struct * joystick) {
    int i;
    int ret = -1;
-   if (handleToggle(state, val, joystick)) return ret;
    for (i=0; i< PERGUN_AXIS+2; i++) {
       if (joyMapping[joystick->mapping].code[i] == val) {
          switch (i) {
@@ -248,9 +137,11 @@ static int LinuxJoyInit(perlinuxjoy_struct * joystick, const char * path, int id
    char name[128];
    struct js_event evt;
    ssize_t num_read;
+   printf("Joyinit open %s\n", path);
    joystick->fd = open(path, O_RDONLY | O_NONBLOCK);
-   if (joystick->fd == -1) return;
+   if (joystick->fd == -1) return -1;
    joystick->axiscount = 0;
+   joystick->id = id;
    while ((num_read = read(joystick->fd, &evt, sizeof(struct js_event))) > 0)
    {      if (evt.type == (JS_EVENT_AXIS | JS_EVENT_INIT))
       {
@@ -354,10 +245,17 @@ static void LinuxJoyFlush(perlinuxjoy_struct * joystick)
    while ((num_read = read(joystick->fd, &evt, sizeof(struct js_event))) > 0);
 }
 
-int getSupportedJoy(const char *name) {
+int isJoyPath(const char *path) {
+   char buf[PATH_MAX + 1]; /* not sure about the "+ 1" */
+   char *res = realpath(path, buf);
+
+   return (strstr(res, "/dev/input/js") != NULL);
+}
+
+int getSupportedJoy(const char *path) {
    int i;
    for (i=0; i<MAPPING_NB; i++) {
-      if (strncmp(name, joyMapping[i].name, 128) == 0) return i;
+      if (strstr(path, joyMapping[i].name) != NULL) return i;
    }
    return -1;
 }
@@ -369,11 +267,14 @@ int PERLinuxJoyInit(void)
    int fd;
    int j=0;
    glob_t globbuf;
-   glob("/dev/input/js*", 0, NULL, &globbuf);
+   glob("/dev/input/by-id/*-joystick", 0, NULL, &globbuf);
    joycount = globbuf.gl_pathc;
    joysticks = calloc(sizeof(perlinuxjoy_struct), joycount);
    for(i = 0;i < globbuf.gl_pathc;i++) {
       perlinuxjoy_struct *joy = joysticks + j;
+      if (!isJoyPath(globbuf.gl_pathv[i]) || (joy->mapping = getSupportedJoy(globbuf.gl_pathv[i])) == -1) {
+         continue;
+      }
       j = (LinuxJoyInit(joy, globbuf.gl_pathv[i], j)<0)?j:j+1;
    }
    joycount = j;

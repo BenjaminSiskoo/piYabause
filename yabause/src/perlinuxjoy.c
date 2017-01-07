@@ -44,7 +44,7 @@ typedef struct {
 #define MAPPING_NB 1
 
 joymapping_struct joyMapping[MAPPING_NB] = {
-   {"SZMy-power_LTD_CO._Dual_Box_WII", 
+   {"SZMy-power LTD CO.  Dual Box WII", 
       {
          JS_EVENT_BUTTON<<8 | 12, //PERPAD_UP
          JS_EVENT_BUTTON<<8 | 13, //PERPAD_RIGHT
@@ -140,6 +140,10 @@ static int LinuxJoyInit(perlinuxjoy_struct * joystick, const char * path, int id
    printf("Joyinit open %s\n", path);
    joystick->fd = open(path, O_RDONLY | O_NONBLOCK);
    if (joystick->fd == -1) return -1;
+   if (ioctl(joystick->fd, JSIOCGNAME(sizeof(name)), name) < 0)
+      strncpy(name, "Unknown", sizeof(name));
+   if ((joystick->mapping = getSupportedJoy(name)) == -1)
+      return -1;
    joystick->axiscount = 0;
    joystick->id = id;
    while ((num_read = read(joystick->fd, &evt, sizeof(struct js_event))) > 0)
@@ -245,17 +249,10 @@ static void LinuxJoyFlush(perlinuxjoy_struct * joystick)
    while ((num_read = read(joystick->fd, &evt, sizeof(struct js_event))) > 0);
 }
 
-int isJoyPath(const char *path) {
-   char buf[PATH_MAX + 1]; /* not sure about the "+ 1" */
-   char *res = realpath(path, buf);
-
-   return (strstr(res, "/dev/input/js") != NULL);
-}
-
-int getSupportedJoy(const char *path) {
+int getSupportedJoy(const char *name) {
    int i;
    for (i=0; i<MAPPING_NB; i++) {
-      if (strstr(path, joyMapping[i].name) != NULL) return i;
+      if (strncmp(name, joyMapping[i].name, 128) == 0) return i;
    }
    return -1;
 }
@@ -267,14 +264,11 @@ int PERLinuxJoyInit(void)
    int fd;
    int j=0;
    glob_t globbuf;
-   glob("/dev/input/by-id/*-joystick", 0, NULL, &globbuf);
+   glob("/dev/input/js*", 0, NULL, &globbuf);
    joycount = globbuf.gl_pathc;
    joysticks = calloc(sizeof(perlinuxjoy_struct), joycount);
    for(i = 0;i < globbuf.gl_pathc;i++) {
       perlinuxjoy_struct *joy = joysticks + j;
-      if (!isJoyPath(globbuf.gl_pathv[i]) || (joy->mapping = getSupportedJoy(globbuf.gl_pathv[i])) == -1) {
-         continue;
-      }
       j = (LinuxJoyInit(joy, globbuf.gl_pathv[i], j)<0)?j:j+1;
    }
    joycount = j;

@@ -2372,16 +2372,31 @@ void YglFrameChangeVDP1(){
   /*YGL*/LOG("YglFrameChangeVDP1: swap drawframe =%d readframe = %d\n", _Ygl->drawframe, _Ygl->readframe);
 }
 
-//////////////////////////////////////////////////////////////////////////////
-void YglRenderVDP1(void) {
-  YglLevel * level;
-  GLuint cprg=0;
-  int j;
-  int status;
-  FrameProfileAdd("YglRenderVDP1 start");
-  YabThreadLock(_Ygl->mutex);
+     color = Vdp1Regs->EWDR;
+     priority = 0;
 
-  LOG("YglRenderVDP1: drawframe =%d", _Ygl->drawframe);
+     if (color & 0x8000)
+       priority = Vdp2Regs->PRISA & 0x7;
+     else
+     {
+       int shadow, colorcalc;
+       Vdp1ProcessSpritePixel(Vdp2Regs->SPCTL & 0xF, &color, &shadow, &priority, &colorcalc);
+#ifdef WORDS_BIGENDIAN
+       priority = ((u8 *)&Vdp2Regs->PRISA)[priority ^ 1] & 0x7;
+#else
+       priority = ((u8 *)&Vdp2Regs->PRISA)[priority] & 0x7;
+#endif
+     }
+
+     if (color == 0)
+     {
+       alpha = 0;
+       priority = 0;
+     }
+     else{
+       alpha = 0xF8;
+     }
+     alpha |= priority;
 
   if (_Ygl->pFrameBuffer != NULL) {
     _Ygl->pFrameBuffer = NULL;
